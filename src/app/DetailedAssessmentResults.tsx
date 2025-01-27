@@ -47,13 +47,35 @@ const AssessmentReport: React.FC<AssessmentReportProps> = ({ results }) => {
     { name: "Communication", score: results.overallAssessment.communicationScore },
   ]
 
+  // Get current date in a readable format
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+
   return (
     <div className="max-w-4xl mx-auto p-6 bg-gray-800 shadow-lg rounded-lg text-white mt-8">
       <h1 className="text-3xl font-bold mb-6">Assessment Report</h1>
 
+      <div className="mb-6 p-4 bg-gray-700 rounded-lg">
+        <h2 className="text-xl font-bold mb-2">Candidate Information</h2>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <span className="text-gray-400">Name:</span>
+            <span className="ml-2 text-white">SARVESWARA</span>
+          </div>
+          <div>
+            <span className="text-gray-400">Assessment Date:</span>
+            <span className="ml-2 text-white">{currentDate}</span>
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-4">
         <AccordionItem title="Assessment Summary">
-          <h3 className="text-xl font-medium mb-2">Candidate Profile:</h3>
+          <h3 className="text-xl font-medium mb-2">Performance Overview:</h3>
           <ul className="list-disc list-inside mb-4">
             <li>Overall Rating: {results.overallAssessment.overallRating} ⭐ out of 5</li>
             <li>Time Management: {results.overallAssessment.timeManagement}</li>
@@ -64,7 +86,7 @@ const AssessmentReport: React.FC<AssessmentReportProps> = ({ results }) => {
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
-              <YAxis />
+              <YAxis domain={[0, 5]} />
               <Tooltip />
               <Bar dataKey="score" fill="#8884d8" />
             </BarChart>
@@ -91,20 +113,41 @@ const AssessmentReport: React.FC<AssessmentReportProps> = ({ results }) => {
           </div>
         </AccordionItem>
 
+        <AccordionItem title="Specific Examples">
+          <ul className="list-disc list-inside">
+            {results.overallAssessment.specificExamples.map((example, index) => (
+              <li key={index} className="mb-2">{example}</li>
+            ))}
+          </ul>
+        </AccordionItem>
+
         <AccordionItem title="Recommendations">
           <ul className="list-disc list-inside">
             {results.overallAssessment.recommendations.map((recommendation, index) => (
-              <li key={index}>{recommendation}</li>
+              <li key={index} className="mb-2">{recommendation}</li>
             ))}
           </ul>
         </AccordionItem>
 
         <AccordionItem title="Behavioral Insights">
-          <ul className="list-disc list-inside">
-            <li>Time Efficiency: {results.metadata.timeEfficiency}</li>
-            <li>Response Patterns: {results.metadata.responsePatterns}</li>
-            <li>Interaction Analysis: {results.metadata.interactionAnalysis}</li>
-          </ul>
+          <div className="space-y-4">
+            <div>
+              <h4 className="text-lg font-medium mb-2">Time Management:</h4>
+              <p className="text-gray-300">{results.metadata.timeManagement}</p>
+            </div>
+            <div>
+              <h4 className="text-lg font-medium mb-2">Time Efficiency:</h4>
+              <p className="text-gray-300">{results.metadata.timeEfficiency}</p>
+            </div>
+            <div>
+              <h4 className="text-lg font-medium mb-2">Response Patterns:</h4>
+              <p className="text-gray-300">{results.metadata.responsePatterns}</p>
+            </div>
+            <div>
+              <h4 className="text-lg font-medium mb-2">Interaction Analysis:</h4>
+              <p className="text-gray-300">{results.metadata.interactionAnalysis}</p>
+            </div>
+          </div>
         </AccordionItem>
       </div>
     </div>
@@ -112,4 +155,3 @@ const AssessmentReport: React.FC<AssessmentReportProps> = ({ results }) => {
 }
 
 export default AssessmentReport
-
