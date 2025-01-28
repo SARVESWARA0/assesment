@@ -1,5 +1,5 @@
 "use server"
-import { generateObject } from "ai"
+import { generateObject, generateText } from "ai"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { z } from "zod"
 
@@ -10,70 +10,110 @@ const google = createGoogleGenerativeAI({
 const systemPrompt = `
 You are an advanced AI assistant specializing in modern assessment platforms, designed to evaluate candidates' innovation mindset and professional communication skills. Your task is to assess user responses based on a robust evaluation framework and generate a detailed, actionable report.
 
-**Evaluation Framework:**
-1. **Relevance to Question** (0-0.3point): First, analyze the response to determine if it directly addresses the question's intent. If the response is irrelevant or missing, assign 0 points and move to the next question. Clearly note "Irrelevant or Missing Response" and do not evaluate further aspects for that response.
-2. **Innovation Assessment** (2.5 stars): For relevant responses only, evaluate creativity, originality, and problem-solving approach. Assign a lower score for generic or uninspired answers.
-3. **Communication Assessment** (2.5 stars): For relevant responses only, assess clarity, coherence, and professionalism. Lower scores indicate poor structure, grammar issues, or lack of clarity.
-4. **Time Management**: For each response, note whether it was delivered efficiently within the given duration. For missing or irrelevant responses, note "Not Applicable."
+EVALUATION GUIDELINES:
 
-**Deductions for Behavioral Patterns (Affects Overall Rating):**
-- **Excessive Tab Switching**: Deduct 0.2 stars if the candidate frequently switches between tabs during the session.
-- **Unusual Typing Patterns**: Deduct 0.2 stars if erratic or inconsistent typing behavior is observed.
-- **Multiple Copy/Paste Instances**: Deduct 0.3 stars for frequent use of copy/paste.
-- **Time Overrun**: Deduct 0.3 stars if the response time exceeds 3 minutes for a particular question.
+1. RELEVANCE CHECK (Critical First Step):
+   - Score 0-0.3 points
+   - Must FIRST verify if response directly addresses the specific question/prompt
+   - For irrelevant responses:
+     * Assign 0 points
+     * Mark as "Irrelevant Response"
+     * Clearly explain why it's irrelevant
+     * Provide an example of what a relevant response should include
 
-**Additional Instructions:**
-- Begin by assessing relevance for each question. Skip further evaluation for irrelevant or missing responses and assign a 0 for relevance.
-- Ensure detailed evaluations are only performed for relevant responses.
-- Adjust the **Overall Rating** by factoring in any deductions for the behavioral patterns mentioned above.
-- Provide constructive feedback for incomplete or low-scoring responses to help candidates improve.
-- Maintain a professional, neutral, and encouraging tone throughout the assessment.
+2. INNOVATION ASSESSMENT (For relevant responses only):
+   - Score 0-2.5 stars
+   - Evaluate:
+     * Originality of ideas
+     * Problem-solving approach
+     * Creative thinking
+     * Unique perspectives
+   - Look for:
+     * Novel solutions
+     * Out-of-box thinking
+     * Practical innovation
+     * Strategic thinking
 
-**Assessment Report Structure:**
+3. COMMUNICATION ASSESSMENT (For relevant responses only):
+   - Score 0-2.5 stars
+   - Evaluate:
+     * Clarity of expression
+     * Structure and organization
+     * Professional tone
+     * Audience awareness
+   - Look for:
+     * Clear messaging
+     * Logical flow
+     * Appropriate formality
+     * Effective persuasion
 
-**1. Executive Summary**
-- **Candidate Profile**: 
-  - Name and Details: SARVESWARA 
-  - Assessment Date: [To be filled]
-  - Total Time Duration: 45 minutes
-  - Overall Rating: ⭐⭐⭐⭐⭐ (out of 5 stars, adjusted for deductions)
-- **General Performance Overview**:
-  - Key Achievements
-  - Overall Observations
+4. RESPONSE-SPECIFIC EVALUATION:
 
-**2. Performance Breakdown**
-- **Relevance to Question**: its mandatory for farther process
-- **Innovation Score**: (out of 2.5 for relevant responses)
-- **Communication Score**: (out of 2.5 for relevant responses)
-- **Behavioral Analysis**: 
-  - Behavioral traits observed (e.g., adaptability, persistence).
-  - Highlights of professional demeanor.
-- **Time Management**: Evaluation of timing and pacing during the response.
+For Professional Communication Tasks:
+- CHECK FIRST: Does the response match the required format (email, report, etc.)?
+- Verify if all required components are present (subject line, greeting, signature, etc.)
+- Assess if tone matches the context (formal/informal as appropriate)
+- Evaluate if key message points are clearly conveyed
+- Check for proper business communication etiquette
 
-**3. Detailed Analysis**
-- **Strengths & Areas for Development**:
-  - Key Competencies: Detailed list of candidate strengths.
-  - Improvement Areas: Targeted insights for growth.
-  - Specific Examples: Examples supporting strengths and improvement areas.
-  - Recommendations: Tailored suggestions for professional development.
+For Innovation Mindset Tasks:
+- CHECK FIRST: Does the response address the core problem/challenge?
+- Evaluate uniqueness of proposed solution
+- Assess practicality and feasibility
+- Look for evidence of analytical thinking
+- Check for consideration of various perspectives
 
-- **Behavioral Insights**:
-  - Time Efficiency: Analysis of response speed and prioritization.
-  - Response Patterns: Trends in communication style or thought processes.
-  - Interaction Analysis: Assessment of engagement, tone, and intent clarity.
+FEEDBACK STRUCTURE:
 
-**4. Actionable Recommendations**
-- Customized growth plan aligned with candidate’s career objectives.
-- Suggested resources for improving innovation and communication skills.
+1. Key Competencies (2-3 points):
+   - Must be specific to the actual response
+   - Include concrete examples from the response
+   Example for Professional Communication:
+   ❌ "Good email structure" (too vague)
+   ✅ "Effective use of bullet points to highlight three key policy changes, making information easily scannable"
 
-**Key Requirements:**
-- Ensure behavioral deductions are applied to determine the final **Overall Rating**.
-- Clearly document any observed behaviors leading to deductions in the report.
-- Offer actionable feedback and support growth with specific recommendations.
-- Maintain a professional and encouraging tone, fostering continuous improvement.
+2. Improvement Areas (2-3 points):
+   - Point: Clear statement of what needs improvement
+   - Example: MUST quote or reference specific part of response
+   - Solution: MUST provide specific guidance on how to improve
+   Example:
+   ❌ "Need to be more specific" (too vague)
+   ✅ "Missing specific achievements of team member. Instead of saying 'has performed well', should list concrete examples like 'led the Q4 project to 30% over target'"
 
-Ensure your analysis is comprehensive, well-structured, and tailored to support the candidate’s professional growth.
-`;
+3. Quick Recommendations (2-3 points):
+   - Each recommendation must include:
+     * What to do differently
+     * Specific example of how to do it
+     * Expected improvement outcome
+   Example:
+   ❌ "Make it more professional" (too vague)
+   ✅ "Replace casual phrases like 'great job' with specific accomplishments. Example: Change 'Jane has done great work' to 'Jane increased team productivity by 25% through implementation of agile methodologies'"
+
+EXAMPLE EVALUATION:
+
+Question: Draft a promotion recommendation email
+Response: [Generic policy update email]
+
+Evaluation:
+- Relevance: 0 points - Response is completely irrelevant (policy update instead of promotion recommendation)
+- Key Issue: Response template appears to be copied from a different context
+- Specific Example of Irrelevance: Email discusses "updates to employee handbook" instead of team member's achievements
+- What a Relevant Response Should Include:
+  * Team member's name and current role
+  * Specific achievements and metrics
+  * Impact on team/organization
+  * Clear recommendation for promotion
+  * Examples of leadership potential
+
+IMPORTANT RULES:
+1. NEVER praise irrelevant responses
+2. ALWAYS provide specific examples from the response in feedback
+3. ALWAYS give actionable, concrete recommendations
+4. NEVER use generic feedback templates
+5. ALWAYS verify response matches required format/context
+6. ALWAYS include "instead of X, write Y" examples in recommendations
+
+Remember: Your evaluation must be specific, actionable, and directly tied to the response content. Generic feedback is not acceptable.`
 
 
 const schema = z.object({
@@ -82,24 +122,84 @@ const schema = z.object({
       overallRating: z.number().min(0).max(5),
       innovationScore: z.number().min(0).max(2.5),
       communicationScore: z.number().min(0).max(2.5),
-      timeManagement: z.string(),
-      keyStrengths: z.array(z.string()),
-      areasForImprovement: z.array(z.string()),
-      specificExamples: z.array(z.string()),
-      recommendations: z.array(z.string()),
     }),
-    metadata: z.object({
-      timeManagement: z.string(),
-      timeEfficiency: z.string(),
-      responsePatterns: z.string(),
-      interactionAnalysis: z.string(),
-      behavioralAnalysis: z.string(),
+    detailedAnalysis: z.object({
+      innovation: z.array(
+        z.object({
+          questionNumber: z.number().min(1).max(5),
+          keyCompetencies: z.array(z.string()).default([]),
+          improvementAreas: z.array(
+            z.object({
+              point: z.string(),
+              example: z.string(),
+            })
+          ).default([]),
+          quickRecommendations: z.array(
+            z.object({
+              recommendation: z.string(),
+              example: z.string(),
+            })
+          ).default([]),
+        })
+      ).length(5),
+      communication: z.array(
+        z.object({
+          questionNumber: z.number().min(6).max(10), // Changed to handle questions 6-10
+          keyCompetencies: z.array(z.string()).default([]),
+          improvementAreas: z.array(
+            z.object({
+              point: z.string(),
+              example: z.string(),
+            })
+          ).default([]),
+          quickRecommendations: z.array(
+            z.object({
+              recommendation: z.string(),
+              example: z.string(),
+            })
+          ).default([]),
+        })
+      ).length(5),
     }),
   }),
-})
+});
 
+// Helper function to preprocess the response before validation
 const preprocessResponse = (response) => {
-  const clamp = (num, min, max) => Math.min(Math.max(num, min), max)
+  const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
+  
+  // Ensure arrays have exactly 5 elements with correct question numbering
+  const padInnovation = (arr, length = 5) => {
+    const padded = [...arr];
+    while (padded.length < length) {
+      const questionNumber = padded.length + 1; // Questions 1-5
+      padded.push({
+        questionNumber,
+        keyCompetencies: [],
+        improvementAreas: [],
+        quickRecommendations: []
+      });
+    }
+    return padded;
+  };
+
+  const padCommunication = (arr, length = 5) => {
+    const padded = [...arr];
+    while (padded.length < length) {
+      const questionNumber = padded.length + 6; // Questions 6-10
+      padded.push({
+        questionNumber,
+        keyCompetencies: [],
+        improvementAreas: [],
+        quickRecommendations: []
+      });
+    }
+    return padded;
+  };
+
+  // Ensure both sections exist and have 5 questions each with correct numbering
+  const innovation = padInnovation(response.detailedAnalysis?.innovation || []);
+  const communication = padCommunication(response.detailedAnalysis?.communication || []);
 
   return {
     ...response,
@@ -109,8 +209,33 @@ const preprocessResponse = (response) => {
       communicationScore: clamp(response.overallAssessment.communicationScore, 0, 2.5),
       overallRating: clamp(response.overallAssessment.overallRating, 0, 5),
     },
-  }
-}
+    detailedAnalysis: {
+      innovation,
+      communication
+    }
+  };
+};
+const behavioralSchema = z.object({
+  behavioralAnalysis: z.object({
+    timeEfficiency: z.object({
+      rating: z.string(),
+      observations: z.array(z.string()),
+      impact: z.string()
+    }),
+    responsePatterns: z.object({
+      patterns: z.array(z.string()),
+      consistency: z.string(),
+      concerns: z.array(z.string()).optional()
+    }),
+    interactionAnalysis: z.object({
+      overview: z.string(),
+      keyBehaviors: z.array(z.string()),
+      recommendations: z.array(z.string())
+    })
+  })
+})
+
+
 
 export async function POST(req) {
   try {
@@ -131,11 +256,6 @@ export async function POST(req) {
         type: "Innovation Mindset",
         question: data?.question || "N/A",
         response: data?.response || "No response provided",
-        timeTaken: data?.timeTaken || 0,
-        responseTime: data?.responseTime || 0,
-        pasteCount: data?.pasteCount || 0,
-        tabSwitchCount: data?.tabSwitchCount || 0,
-        unusualTypingCount: data?.unusualTypingCount || 0,
       })),
       ...Object.entries(body.professionalCommunication).map(([index, data]) => ({
         type: "Professional Communication",
@@ -143,47 +263,76 @@ export async function POST(req) {
         context: data?.context || "N/A",
         instructions: data?.instructions || "N/A",
         response: data?.response || "No response provided",
-        timeTaken: data?.timeTaken || 0,
-        responseTime: data?.responseTime || 0,
-        pasteCount: data?.pasteCount || 0,
-        tabSwitchCount: data?.tabSwitchCount || 0,
-        unusualTypingCount: data?.unusualTypingCount || 0,
       })),
     ]
 
-    const combinedPrompt = `${systemPrompt}\n\nUser Responses:\n${processedResponses
-      .map((response) => {
-        let baseInfo = `${response.type}\n`
-        if (response.type === "Innovation Mindset") {
-          baseInfo += `Question: ${response.question}\n`
-        } else if (response.type === "Professional Communication") {
-          baseInfo += `Subject: ${response.subject}\nContext: ${response.context}\nInstructions: ${response.instructions}\n`
-        }
-        return `${baseInfo}Response: ${response.response}\nTime Taken: ${response.timeTaken} minutes\nResponse Time: ${response.responseTime} seconds\nPaste Count: ${response.pasteCount}\nTab Switch Count: ${response.tabSwitchCount}\nUnusual Typing Count: ${response.unusualTypingCount}`
-      })
-      .join(
-        "\n\n",
-      )}\n\nOverall Behavioral Data:\nTotal Paste Count: ${body.behavioralData.totalPasteCount}\nTotal Tab Switch Count: ${body.behavioralData.totalTabSwitchCount}\nTotal Unusual Typing Count: ${body.behavioralData.totalUnusualTypingCount}`
+    const combinedPrompt = `${systemPrompt}\n\nUser Responses:\n${processedResponses.map((response) => {
+      let baseInfo = `${response.type}\n`
+      if (response.type === "Innovation Mindset") {
+        baseInfo += `Question: ${response.question}\n`
+      } else if (response.type === "Professional Communication") {
+        baseInfo += `Subject: ${response.subject}\nContext: ${response.context}\nInstructions: ${response.instructions}\n`
+      }
+      return `${baseInfo}Response: ${response.response}`
+    })}`
 
     console.log("Combined Prompt:", combinedPrompt)
 
-    const { object } = await generateObject({
+    const { object: assessmentObject } = await generateObject({
       model: google("gemini-2.0-flash-exp"),
       schema: schema,
       prompt: combinedPrompt,
       preprocess: preprocessResponse,
     })
-    console.log("Generated assessment object:", object.response)
-    return new Response(JSON.stringify(object.response), {
+    const behavioralInsightsPrompt = `
+    Analyze the following behavioral data and provide a detailed structured analysis:
+    
+    Behavioral Metrics:
+    - Unusual Typing Patterns: ${body.behavioralData.totalUnusualTypingCount}
+    - Tab Switching: ${body.behavioralData.totalTabSwitchCount}
+    - Copy/Paste Actions: ${body.behavioralData.totalPasteCount}
+    - Time Overrun: ${body.behavioralData.timeOverrun ? "Yes" : "No"}
+
+    Please provide:
+    1. Time Efficiency Analysis:
+       - Rate the overall efficiency
+       - List specific time-related observations
+       - Describe the impact on assessment quality
+    
+    2. Response Pattern Analysis:
+       - Identify consistent patterns
+       - Note any irregularities
+       - List potential concerns if any
+    
+    3. Interaction Analysis:
+       - Provide an overview of interaction style
+       - List key observed behaviors
+       - Suggest improvements or recommendations
+    
+    Format the response according to the provided schema structure.
+    `
+
+    const { object: behavioralAnalysis } = await generateObject({
+      model: google("gemini-2.0-flash-exp"),
+      schema: behavioralSchema,
+      prompt: behavioralInsightsPrompt
+    })
+
+    const finalResponse = {
+      ...assessmentObject.response,
+      behavioralAnalysis: behavioralAnalysis.behavioralAnalysis
+    }
+
+    console.log("Generated assessment object:", finalResponse)
+    return new Response(JSON.stringify(finalResponse), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" }
     })
   } catch (error) {
     console.error("Error during assessment processing:", error)
     return new Response(JSON.stringify({ error: "Failed to process the assessment. Please try again." }), {
       status: 500,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" }
     })
   }
 }
-

@@ -64,6 +64,7 @@ export default function AssessmentPage() {
   const [pasteCount, setPasteCount] = useState(0)
   const [tabSwitchCount, setTabSwitchCount] = useState(0)
   const [unusualTypingCount, setUnusualTypingCount] = useState(0)
+  const [blockCopyPaste, setBlockCopyPaste] = useState(false) // Added state for copy-paste toggle
   const router = useRouter()
   const [showFeedback, setShowFeedback] = useState(false)
   const [showConfirmation, setShowConfirmation] = useState(false)
@@ -165,13 +166,34 @@ export default function AssessmentPage() {
     }))
   }
 
+  const handleCopyPaste = (e) => {
+    setPasteCount((prev) => prev + 1)
+    setResponses((prev) => ({
+      ...prev,
+      [currentSection]: {
+        ...prev[currentSection],
+        [currentQuestion]: {
+          ...prev[currentSection]?.[currentQuestion],
+          pasteCount: (prev[currentSection]?.[currentQuestion]?.pasteCount || 0) + 1,
+        },
+      },
+    }))
+    if (blockCopyPaste) {
+      e.preventDefault()
+    }
+  }
+
   const handleSubmit = useCallback(async () => {
     setShowConfirmation(true)
+    const timeOverrun = Object.values(timing).some((t) => t.timeLeft <= 0) //Added time overrun check
+    const timeOverrunDeduction = timeOverrun ? 0.3 : 0 //Added time overrun deduction
+
     // Prepare behavioral data
     const behavioralData = {
       totalPasteCount: pasteCount,
       totalTabSwitchCount: tabSwitchCount,
       totalUnusualTypingCount: unusualTypingCount,
+      timeOverrun: timeOverrun, //Added time overrun to behavioral data
     }
 
     // Prepare the payload
@@ -226,7 +248,7 @@ export default function AssessmentPage() {
       console.error("Failed to send assessment data:", error)
       alert(error.message)
     }
-  }, [responses, pasteCount, tabSwitchCount, unusualTypingCount, questions, emailScenarios])
+  }, [responses, pasteCount, tabSwitchCount, unusualTypingCount, questions, emailScenarios, timing])
 
   const confirmSubmit = async () => {
     setShowConfirmation(false)
@@ -244,7 +266,7 @@ export default function AssessmentPage() {
         },
         {},
       )
-
+  
       const professionalCommunicationResponses = Object.entries(responses.professionalCommunication || {}).reduce(
         (acc, [index, data]) => {
           if (data && data.response) {
@@ -259,7 +281,7 @@ export default function AssessmentPage() {
         },
         {},
       )
-
+  
       const payload = {
         innovationMindset: innovationMindsetResponses,
         professionalCommunication: professionalCommunicationResponses,
@@ -269,30 +291,46 @@ export default function AssessmentPage() {
           totalUnusualTypingCount: unusualTypingCount,
         },
       }
-
+  
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       })
-
+  
       if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || "Failed to submit assessment.")
+        throw new Error(`HTTP error! status: ${res.status}`)
       }
-
+  
       const data = await res.json()
       console.log("Assessment submitted successfully:", data)
-
-      setAssessmentResults(data)
+  
+      // Ensure the data structure matches what DetailedAssessmentResults expects
+      setAssessmentResults({
+        overallAssessment: {
+          overallRating: data.overallAssessment.overallRating,
+          innovationScore: data.overallAssessment.innovationScore,
+          communicationScore: data.overallAssessment.communicationScore,
+        },
+        detailedAnalysis: {
+          innovation: data.detailedAnalysis.innovation,
+          communication: data.detailedAnalysis.communication,
+        },
+        behavioralAnalysis: data.behavioralAnalysis,
+        behavioralData: {
+          totalUnusualTypingCount: unusualTypingCount,
+          totalTabSwitchCount: tabSwitchCount,
+          totalPasteCount: pasteCount,
+        },
+      })
+      
+      setIsLoading(false)
     } catch (error) {
       console.error("Error submitting assessment:", error)
-      alert(error.message)
-    } finally {
       setIsLoading(false)
+      alert(error.message)
     }
   }
-
   const handleNext = () => {
     const currentResponse = responses[currentSection]?.[currentQuestion]?.response || ""
     if (currentResponse.trim().split(/\s+/).length < 5) {
@@ -339,6 +377,40 @@ export default function AssessmentPage() {
   }, [currentSection, currentQuestion])
 
   useEffect(() => {
+    const handleCopy = () => {
+      setPasteCount((prev) => prev + 1)
+      setResponses((prev) => ({
+        ...prev,
+        [currentSection]: {
+          ...prev[currentSection],
+          [currentQuestion]: {
+            ...prev[currentSection]?.[currentQuestion],
+            pasteCount: (prev[currentSection]?.[currentQuestion]?.pasteCount || 0) + 1,
+          },
+        },
+      }))
+    }
+
+    document.addEventListener("copy", handleCopy)
+    return () => {
+      document.removeEventListener("copy", handleCopy)
+    }
+  }, [currentSection, currentQuestion])
+
+  useEffect(() => {
+    const preventCopy = (e) => {
+      if (blockCopyPaste) {
+        e.preventDefault()
+      }
+    }
+
+    document.addEventListener("copy", preventCopy)
+    return () => {
+      document.removeEventListener("copy", preventCopy)
+    }
+  }, [blockCopyPaste])
+
+  useEffect(() => {
     handleStart(currentQuestion)
     return () => {
       if (timerRef.current) {
@@ -359,6 +431,18 @@ export default function AssessmentPage() {
     <div className="min-h-screen bg-gray-900 text-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <ProgressIndicator currentQuestion={currentQuestionNumber} totalQuestions={totalQuestions} />
+        <div className="mb-4 flex items-center justify-end">
+          <label htmlFor="blockCopyPaste" className="mr-2 text-sm text-gray-300">
+            Block Copy/Paste:
+          </label>
+          <input
+            type="checkbox"
+            id="blockCopyPaste"
+            checked={blockCopyPaste}
+            onChange={(e) => setBlockCopyPaste(e.target.checked)}
+            className="form-checkbox h-5 w-5 text-indigo-600"
+          />
+        </div>
         <div className="bg-gray-800 shadow-xl rounded-lg overflow-hidden">
           <div className="px-6 py-4 bg-indigo-600 text-white">
             <h1 className="text-3xl font-bold">Student Assessment</h1>
@@ -406,19 +490,7 @@ export default function AssessmentPage() {
               rows={6}
               placeholder="Type your answer here..."
               onChange={(e) => handleResponse(currentSection, currentQuestion, e.target.value)}
-              onPaste={() => {
-                setPasteCount((prev) => prev + 1)
-                setResponses((prev) => ({
-                  ...prev,
-                  [currentSection]: {
-                    ...prev[currentSection],
-                    [currentQuestion]: {
-                      ...prev[currentSection]?.[currentQuestion],
-                      pasteCount: (prev[currentSection]?.[currentQuestion]?.pasteCount || 0) + 1,
-                    },
-                  },
-                }))
-              }}
+              onPaste={handleCopyPaste}
               value={responses[currentSection]?.[currentQuestion]?.response || ""}
             ></textarea>
 
@@ -444,10 +516,11 @@ export default function AssessmentPage() {
             </div>
           </div>
         </div>
-
+        
         {isLoading && <LoadingSpinner />}
         {showFeedback && <FeedbackForm onSubmit={() => setShowFeedback(false)} />}
         {assessmentResults && <DetailedAssessmentResults results={assessmentResults} />}
+        
         <ConfirmationModal
           isOpen={showConfirmation}
           onConfirm={confirmSubmit}
@@ -457,4 +530,5 @@ export default function AssessmentPage() {
     </div>
   )
 }
+
 
